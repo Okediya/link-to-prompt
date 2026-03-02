@@ -46,7 +46,7 @@ export default function RootLayout({
           <p className="text-xs text-[#C0C0C0]/60 tracking-wide">
             Open Source &middot; MIT License &middot;{" "}
             <a
-              href="https://github.com/yourusername/link-to-prompt"
+              href="https://github.com/Okediya/link-to-prompt"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#C0C0C0]/80 hover:text-white transition-colors underline underline-offset-2"

@@ -65,7 +65,7 @@ The logo depicts a metallic robot hand and a human hand with index fingers nearl
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/link-to-prompt.git
+git clone https://github.com/Okediya/link-to-prompt.git
 cd link-to-prompt
 
 # 2. Install dependencies
