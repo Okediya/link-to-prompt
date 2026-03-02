@@ -13,11 +13,20 @@ import { generateText } from "ai";
 import { NextResponse } from "next/server";
 import { INITIAL_SYSTEM_PROMPT } from "@/lib/system-prompts";
 
-// Initialize the Groq provider
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+// Initialize the Groq provider (moved inside handler to handle missing API key gracefully)
 
 export async function POST(request: Request) {
     try {
+        const apiKey = process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+            console.error("[/api/generate] Missing GROQ_API_KEY environment variable.");
+            return NextResponse.json(
+                { error: "Groq API key is not configured. Please add GROQ_API_KEY to your environment variables." },
+                { status: 500 }
+            );
+        }
+
         const { url } = await request.json();
 
         if (!url || typeof url !== "string") {
@@ -50,6 +59,7 @@ export async function POST(request: Request) {
                 : markdown;
 
         // --- Step 2: Generate prompt via Groq ---
+        const groq = createGroq({ apiKey });
         const { text } = await generateText({
             model: groq("llama-3.3-70b-versatile"),
             system: INITIAL_SYSTEM_PROMPT,
@@ -57,10 +67,14 @@ export async function POST(request: Request) {
         });
 
         return NextResponse.json({ prompt: text });
-    } catch (error) {
+    } catch (error: any) {
         console.error("[/api/generate] Error:", error);
+
+        // Return a more descriptive error if it's from the AI SDK or common issues
+        const errorMessage = error?.message || "An unexpected error occurred while generating the prompt.";
+
         return NextResponse.json(
-            { error: "An unexpected error occurred while generating the prompt." },
+            { error: errorMessage },
             { status: 500 }
         );
     }

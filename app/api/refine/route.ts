@@ -10,11 +10,20 @@ import { createGroq } from "@ai-sdk/groq";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { REFINE_SYSTEM_PROMPT } from "@/lib/system-prompts";
 
-// Initialize the Groq provider
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+// Initialize the Groq provider (moved inside handler to handle missing API key gracefully)
 
 export async function POST(request: Request) {
     try {
+        const apiKey = process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+            console.error("[/api/refine] Missing GROQ_API_KEY environment variable.");
+            return new Response(
+                JSON.stringify({ error: "Groq API key is not configured. Please add GROQ_API_KEY to your environment variables." }),
+                { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+        }
+
         const { messages, currentPrompt } = await request.json();
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -43,6 +52,7 @@ export async function POST(request: Request) {
         const modelMessages = await convertToModelMessages(messages);
 
         // Stream the response using Vercel AI SDK
+        const groq = createGroq({ apiKey });
         const result = streamText({
             model: groq("llama-3.3-70b-versatile"),
             system: systemPrompt,
@@ -51,10 +61,13 @@ export async function POST(request: Request) {
 
         // Return as a UIMessage stream response (compatible with useChat)
         return result.toUIMessageStreamResponse();
-    } catch (error) {
+    } catch (error: any) {
         console.error("[/api/refine] Error:", error);
+
+        const errorMessage = error?.message || "An unexpected error occurred during refinement.";
+
         return new Response(
-            JSON.stringify({ error: "An unexpected error occurred during refinement." }),
+            JSON.stringify({ error: errorMessage }),
             { status: 500, headers: { "Content-Type": "application/json" } }
         );
     }
